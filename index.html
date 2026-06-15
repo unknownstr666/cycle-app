@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CYCLE_TERMINAL</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --bg:#0a0012;
+    --purple:#a855f7;
+    --purple-dim:#6b21a8;
+    --purple-glow:#c084fc;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg);
+    color:var(--purple);
+    font-family:"Courier New",monospace;
+    overflow-x:hidden;
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:12px;
+    position:relative;
+    padding-top:calc(12px + env(safe-area-inset-top));
+  }
+  body::after{
+    content:"";
+    position:fixed;inset:0;pointer-events:none;z-index:50;
+    background:repeating-linear-gradient(to bottom,
+      rgba(168,85,247,0.04) 0px,rgba(168,85,247,0.04) 1px,
+      transparent 1px,transparent 3px);
+  }
+  .grid-bg{
+    position:fixed;inset:0;z-index:0;
+    background-image:
+      linear-gradient(rgba(168,85,247,0.07) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(168,85,247,0.07) 1px,transparent 1px);
+    background-size:36px 36px;
+    animation:gridmove 8s linear infinite;
+  }
+  @keyframes gridmove{from{background-position:0 0;}to{background-position:36px 36px;}}
+  .terminal{
+    position:relative;z-index:10;width:100%;max-width:520px;
+    background:rgba(18,0,31,0.85);
+    border:1px solid var(--purple-dim);border-radius:8px;
+    box-shadow:0 0 30px rgba(168,85,247,0.4),inset 0 0 60px rgba(168,85,247,0.05);
+  }
+  .titlebar{
+    display:flex;align-items:center;gap:7px;padding:9px 12px;
+    border-bottom:1px solid var(--purple-dim);background:rgba(168,85,247,0.08);
+  }
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--purple-dim);box-shadow:0 0 6px var(--purple);}
+  .dot:nth-child(2){opacity:.7;}.dot:nth-child(3){opacity:.4;}
+  .title-text{margin-left:8px;font-size:11px;letter-spacing:2px;color:var(--purple-glow);text-shadow:0 0 8px var(--purple);}
+  .screen{padding:16px;min-height:60vh;font-size:13px;line-height:1.65;}
+  .line{white-space:pre-wrap;text-shadow:0 0 6px rgba(168,85,247,0.6);word-break:break-word;}
+  .prompt{color:var(--purple-glow);}
+  .dim{color:var(--purple-dim);}
+  .bright{color:#e9d5ff;text-shadow:0 0 10px var(--purple-glow);}
+  .alert{color:#f0abfc;text-shadow:0 0 12px var(--purple-glow);font-weight:bold;}
+  .sep{color:var(--purple-dim);}
+  .bar-wrap{display:flex;align-items:center;gap:8px;margin:4px 0;flex-wrap:wrap;}
+  .bar{flex:0 0 auto;width:150px;height:12px;border:1px solid var(--purple-dim);background:#1a0030;overflow:hidden;}
+  .bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--purple-dim),var(--purple-glow));box-shadow:0 0 12px var(--purple);}
+  .bar-pct{font-size:11px;color:var(--purple-glow);min-width:38px;}
+  .clock-box{margin-top:14px;padding:14px;border:1px dashed var(--purple-dim);text-align:center;background:rgba(168,85,247,0.05);border-radius:6px;}
+  .clock-label{font-size:10px;letter-spacing:3px;color:var(--purple-dim);}
+  .cycle-row{font-size:13px;letter-spacing:1px;margin-top:5px;text-shadow:0 0 6px rgba(168,85,247,0.5);}
+  .clock{font-size:30px;letter-spacing:3px;color:var(--purple-glow);text-shadow:0 0 16px var(--purple),0 0 30px var(--purple-dim);margin-top:6px;font-weight:bold;}
+  .cursor{display:inline-block;width:8px;height:15px;background:var(--purple-glow);box-shadow:0 0 10px var(--purple-glow);animation:blink 1s steps(2) infinite;vertical-align:middle;margin-left:2px;}
+  @keyframes blink{50%{opacity:0;}}
+  .flicker{animation:flick 3s infinite;}
+  @keyframes flick{0%,19%,21%,100%{opacity:1;}20%{opacity:.6;}55%{opacity:.85;}}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="terminal flicker">
+  <div class="titlebar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="title-text">root@cycle_node :: secure_shell</span>
+  </div>
+  <div class="screen" id="screen"></div>
+</div>
+
+<script>
+// ---- Telegram WebApp init ----
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+if(tg){
+  try{
+    tg.ready();
+    tg.expand();
+    tg.setHeaderColor("#0a0012");
+    tg.setBackgroundColor("#0a0012");
+  }catch(e){}
+}
+
+const screen = document.getElementById("screen");
+
+// =====================================================================
+//  НАЛАШТУВАННЯ ЦИКЛУ
+//  CYCLE_START — фіксований момент старту циклу (єдиний для всіх).
+//  Відлік = CYCLE_START + 168 годин. Не збивається при перезаході,
+//  бо рахується від абсолютної дати, а не від моменту відкриття.
+//  Зміни дату під свій реальний старт (формат UTC ISO).
+// =====================================================================
+const CYCLE_HOURS = 168; // тиждень
+const CYCLE_START_ISO = "2026-06-16T00:01:00Z"; // старт циклу (UTC)
+
+const CYCLE_START_MS = new Date(CYCLE_START_ISO).getTime();
+const CYCLE_END_MS = CYCLE_START_MS + CYCLE_HOURS*3600*1000; // рівно через тиждень
+
+const sequence = [
+  {type:"text", cls:"alert",  text:"[ SYSTEM ALERT ]", delay:22},
+  {type:"text", cls:"bright", text:"Cycle_02 :: ACTIVATED", delay:18},
+  {type:"text", cls:"text",   text:"Initiator_ID: ADMINSTT1", delay:14},
+  {type:"clockline"},
+  {type:"text", cls:"text",   text:"Execution_Period: 168 HOURS", delay:14},
+  {type:"text", cls:"text",   text:"Validated_Wallet_Mode: TRUE", delay:14},
+  {type:"text", cls:"text",   text:"Script_Status: RUNNING", delay:14},
+  {type:"text", cls:"sep",    text:"────────────────────", delay:6},
+  {type:"bar",  label:"ACCESS  ", time:850},
+  {type:"text", cls:"text",   text:"Access protocol accepted", delay:14},
+  {type:"text", cls:"text",   text:"Verification layer enabled", delay:14},
+  {type:"bar",  label:"NET_SYNC", time:1050},
+  {type:"text", cls:"text",   text:"Network synchronization completed", delay:14},
+  {type:"text", cls:"bright", text:"Wallet authentication successful", delay:16},
+  {type:"bar",  label:"DECRYPT ", time:1200},
+  {type:"text", cls:"dim",    text:"Restricted functions are now available for validated wallets only.", delay:12},
+  {type:"text", cls:"text",   text:"Cycle countdown initiated.", delay:16},
+  {type:"text", cls:"bright", text:"STATUS: ACTIVE", delay:20},
+  {type:"text", cls:"alert",  text:"NO MANUAL OVERRIDE DETECTED", delay:18},
+  {type:"text", cls:"sep",    text:"────────────────────", delay:6},
+  {type:"text", cls:"prompt", text:"Awaiting next trigger...", delay:20},
+  {type:"clock"}
+];
+
+let i = 0;
+function next(){
+  if(i >= sequence.length) return;
+  const item = sequence[i];
+  if(item.type === "text"){ typeLine(item, ()=>{i++;setTimeout(next,200);}); }
+  else if(item.type === "bar"){ runBar(item, ()=>{i++;setTimeout(next,170);}); }
+  else if(item.type === "clockline"){ showClockLine(); i++; setTimeout(next,220); }
+  else if(item.type === "clock"){ showClock(); i++; }
+}
+
+function typeLine(item, done){
+  const div = document.createElement("div");
+  div.className = "line " + item.cls;
+  screen.appendChild(div);
+  const cur = document.createElement("span");
+  cur.className = "cursor"; div.appendChild(cur);
+  let n = 0; const txt = item.text;
+  (function tick(){
+    if(n < txt.length){ cur.insertAdjacentText("beforebegin", txt[n]); n++; setTimeout(tick,item.delay); }
+    else { cur.remove(); done(); }
+  })();
+}
+
+function runBar(item, done){
+  const wrap = document.createElement("div");
+  wrap.className = "bar-wrap";
+  wrap.innerHTML = '<span class="dim">[ '+item.label+' ]</span>'+
+    '<div class="bar"><div class="bar-fill"></div></div><span class="bar-pct">0%</span>';
+  screen.appendChild(wrap);
+  const fill = wrap.querySelector(".bar-fill");
+  const pct  = wrap.querySelector(".bar-pct");
+  let p = 0; const steps = 25;
+  const t = setInterval(()=>{
+    p += Math.ceil(Math.random()*7)+2;
+    if(p>=100){p=100;clearInterval(t);setTimeout(done,140);}
+    fill.style.width=p+"%"; pct.textContent=p+"%";
+  }, item.time/steps);
+}
+
+function utcStamp(){
+  const d = new Date(); const p=n=>String(n).padStart(2,"0");
+  return d.getUTCFullYear()+"-"+p(d.getUTCMonth()+1)+"-"+p(d.getUTCDate())+
+    " "+p(d.getUTCHours())+":"+p(d.getUTCMinutes())+":"+p(d.getUTCSeconds())+" UTC";
+}
+function showClockLine(){
+  const div=document.createElement("div"); div.className="line bright";
+  div.textContent="UTC_TIME: "+utcStamp(); screen.appendChild(div);
+  setInterval(()=>{div.textContent="UTC_TIME: "+utcStamp();},1000);
+}
+
+function fmtUTC(ms){
+  const d=new Date(ms); const p=n=>String(n).padStart(2,"0");
+  return d.getUTCFullYear()+"-"+p(d.getUTCMonth()+1)+"-"+p(d.getUTCDate())+
+    " "+p(d.getUTCHours())+":"+p(d.getUTCMinutes())+" UTC";
+}
+
+function showClock(){
+  const box=document.createElement("div"); box.className="clock-box";
+  box.innerHTML=
+    '<div class="clock-label">CYCLE WINDOW</div>'+
+    '<div class="cycle-row"><span class="dim">START:</span> <span class="bright">'+fmtUTC(CYCLE_START_MS)+'</span></div>'+
+    '<div class="cycle-row"><span class="dim">END&nbsp;&nbsp;:</span> <span class="bright">'+fmtUTC(CYCLE_END_MS)+'</span></div>'+
+    '<div class="clock-label" style="margin-top:12px;">CURRENT TIME (UTC)</div>'+
+    '<div class="clock" id="clock">--:--:--</div>';
+  screen.appendChild(box);
+  const cl=document.getElementById("clock");
+  function upd(){
+    const d=new Date(); const p=n=>String(n).padStart(2,"0");
+    cl.innerHTML=p(d.getUTCHours())+":"+p(d.getUTCMinutes())+":"+p(d.getUTCSeconds())+
+      ' <span style="font-size:12px;color:var(--purple-dim)">UTC</span>';
+  }
+  upd(); setInterval(upd,1000);
+}
+
+setTimeout(next, 400);
+</script>
+</body>
+</html>
