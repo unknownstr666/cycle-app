@@ -7,16 +7,16 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root{
-    --bg:#0a0012;
-    --purple:#a855f7;
-    --purple-dim:#6b21a8;
-    --purple-glow:#c084fc;
+    --bg:#020502;
+    --green:#00ff66;
+    --green-dim:#008f3a;
+    --green-glow:#66ff99;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   html,body{height:100%;}
   body{
     background:var(--bg);
-    color:var(--purple);
+    color:var(--green);
     font-family:"Courier New",monospace;
     overflow-x:hidden;
     min-height:100vh;
@@ -31,47 +31,47 @@
     content:"";
     position:fixed;inset:0;pointer-events:none;z-index:50;
     background:repeating-linear-gradient(to bottom,
-      rgba(168,85,247,0.04) 0px,rgba(168,85,247,0.04) 1px,
+      rgba(0,255,102,0.04) 0px,rgba(0,255,102,0.04) 1px,
       transparent 1px,transparent 3px);
   }
   .grid-bg{
     position:fixed;inset:0;z-index:0;
     background-image:
-      linear-gradient(rgba(168,85,247,0.07) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(168,85,247,0.07) 1px,transparent 1px);
+      linear-gradient(rgba(0,255,102,0.07) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(0,255,102,0.07) 1px,transparent 1px);
     background-size:36px 36px;
     animation:gridmove 8s linear infinite;
   }
   @keyframes gridmove{from{background-position:0 0;}to{background-position:36px 36px;}}
   .terminal{
     position:relative;z-index:10;width:100%;max-width:520px;
-    background:rgba(18,0,31,0.85);
-    border:1px solid var(--purple-dim);border-radius:8px;
-    box-shadow:0 0 30px rgba(168,85,247,0.4),inset 0 0 60px rgba(168,85,247,0.05);
+    background:rgba(0,8,0,0.88);
+    border:1px solid var(--green-dim);border-radius:8px;
+    box-shadow:0 0 30px rgba(0,255,102,0.28),inset 0 0 60px rgba(0,255,102,0.05);
   }
   .titlebar{
     display:flex;align-items:center;gap:7px;padding:9px 12px;
-    border-bottom:1px solid var(--purple-dim);background:rgba(168,85,247,0.08);
+    border-bottom:1px solid var(--green-dim);background:rgba(0,255,102,0.05);
   }
-  .dot{width:10px;height:10px;border-radius:50%;background:var(--purple-dim);box-shadow:0 0 6px var(--purple);}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--green-dim);box-shadow:0 0 8px var(--green);}
   .dot:nth-child(2){opacity:.7;}.dot:nth-child(3){opacity:.4;}
-  .title-text{margin-left:8px;font-size:11px;letter-spacing:2px;color:var(--purple-glow);text-shadow:0 0 8px var(--purple);}
+  .title-text{margin-left:8px;font-size:11px;letter-spacing:2px;color:var(--green-glow);text-shadow:0 0 10px var(--green);}
   .screen{padding:16px;min-height:60vh;font-size:13px;line-height:1.65;}
-  .line{white-space:pre-wrap;text-shadow:0 0 6px rgba(168,85,247,0.6);word-break:break-word;}
-  .prompt{color:var(--purple-glow);}
-  .dim{color:var(--purple-dim);}
-  .bright{color:#e9d5ff;text-shadow:0 0 10px var(--purple-glow);}
-  .alert{color:#f0abfc;text-shadow:0 0 12px var(--purple-glow);font-weight:bold;}
-  .sep{color:var(--purple-dim);}
+  .line{white-space:pre-wrap;text-shadow:0 0 8px rgba(0,255,102,0.55);word-break:break-word;}
+  .prompt{color:var(--green-glow);}
+  .dim{color:var(--green-dim);}
+  .bright{color:#d8ffe6;text-shadow:0 0 12px var(--green-glow);}
+  .alert{color:#7dffb3;text-shadow:0 0 16px var(--green-glow);font-weight:bold;}
+  .sep{color:var(--green-dim);}
   .bar-wrap{display:flex;align-items:center;gap:8px;margin:4px 0;flex-wrap:wrap;}
-  .bar{flex:0 0 auto;width:150px;height:12px;border:1px solid var(--purple-dim);background:#1a0030;overflow:hidden;}
-  .bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--purple-dim),var(--purple-glow));box-shadow:0 0 12px var(--purple);}
-  .bar-pct{font-size:11px;color:var(--purple-glow);min-width:38px;}
-  .clock-box{margin-top:14px;padding:14px;border:1px dashed var(--purple-dim);text-align:center;background:rgba(168,85,247,0.05);border-radius:6px;}
-  .clock-label{font-size:10px;letter-spacing:3px;color:var(--purple-dim);}
-  .cycle-row{font-size:13px;letter-spacing:1px;margin-top:5px;text-shadow:0 0 6px rgba(168,85,247,0.5);}
-  .clock{font-size:30px;letter-spacing:3px;color:var(--purple-glow);text-shadow:0 0 16px var(--purple),0 0 30px var(--purple-dim);margin-top:6px;font-weight:bold;}
-  .cursor{display:inline-block;width:8px;height:15px;background:var(--purple-glow);box-shadow:0 0 10px var(--purple-glow);animation:blink 1s steps(2) infinite;vertical-align:middle;margin-left:2px;}
+  .bar{flex:0 0 auto;width:150px;height:12px;border:1px solid var(--green-dim);background:#001a08;overflow:hidden;}
+  .bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--green-dim),var(--green-glow));box-shadow:0 0 14px var(--green);}
+  .bar-pct{font-size:11px;color:var(--green-glow);min-width:38px;}
+  .clock-box{margin-top:14px;padding:14px;border:1px dashed var(--green-dim);text-align:center;background:rgba(0,255,102,0.04);border-radius:6px;}
+  .clock-label{font-size:10px;letter-spacing:3px;color:var(--green-dim);}
+  .cycle-row{font-size:13px;letter-spacing:1px;margin-top:5px;text-shadow:0 0 6px rgba(0,255,102,0.45);}
+  .clock{font-size:30px;letter-spacing:3px;color:var(--green-glow);text-shadow:0 0 18px var(--green),0 0 35px var(--green-dim);margin-top:6px;font-weight:bold;}
+  .cursor{display:inline-block;width:8px;height:15px;background:var(--green-glow);box-shadow:0 0 12px var(--green-glow);animation:blink 1s steps(2) infinite;vertical-align:middle;margin-left:2px;}
   @keyframes blink{50%{opacity:0;}}
   .flicker{animation:flick 3s infinite;}
   @keyframes flick{0%,19%,21%,100%{opacity:1;}20%{opacity:.6;}55%{opacity:.85;}}
@@ -94,8 +94,8 @@ if(tg){
   try{
     tg.ready();
     tg.expand();
-    tg.setHeaderColor("#0a0012");
-    tg.setBackgroundColor("#0a0012");
+    tg.setHeaderColor("#020502");
+    tg.setBackgroundColor("#020502");
   }catch(e){}
 }
 
@@ -109,7 +109,7 @@ const screen = document.getElementById("screen");
 //  Зміни дату під свій реальний старт (формат UTC ISO).
 // =====================================================================
 const CYCLE_HOURS = 168; // тиждень
-const CYCLE_START_ISO = "2026-06-16T00:01:00Z"; // старт циклу (UTC)
+const CYCLE_START_ISO = "2026-07-07T21:00:00Z"; // старт циклу (UTC)
 
 const CYCLE_START_MS = new Date(CYCLE_START_ISO).getTime();
 const CYCLE_END_MS = CYCLE_START_MS + CYCLE_HOURS*3600*1000; // рівно через тиждень
@@ -208,7 +208,7 @@ function showClock(){
   function upd(){
     const d=new Date(); const p=n=>String(n).padStart(2,"0");
     cl.innerHTML=p(d.getUTCHours())+":"+p(d.getUTCMinutes())+":"+p(d.getUTCSeconds())+
-      ' <span style="font-size:12px;color:var(--purple-dim)">UTC</span>';
+      ' <span style="font-size:12px;color:var(--green-dim)">UTC</span>';
   }
   upd(); setInterval(upd,1000);
 }
